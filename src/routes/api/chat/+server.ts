@@ -37,10 +37,19 @@ async function initPineCone() {
 }
 
 
+  
+const configuration = new Configuration({
+  organization: OPENAI_ORG_ID,
+  apiKey: OPENAI_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
 async function getContext(query) {
 
   const pinecone_index = await initPineCone()
 
+  return "none"
+  
   const res = await openai.createEmbedding({
     input: query,
     model: 'text-embedding-ada-002',
@@ -49,12 +58,9 @@ async function getContext(query) {
   const xq = res.data.data[0].embedding;
   const result = await pinecone_index.query(
     { queryRequest: {
-      // namespace: "example-namespace",
+
       topK: 3,
-      // filter: {
-      //   genre: { $in: ["comedy", "documentary", "drama"] },
-      // },
-      // includeValues: true,
+
       includeMetadata: true,
       vector: xq,
     }
@@ -70,12 +76,6 @@ async function getContext(query) {
 export const POST: RequestHandler = async ({ request }) => {
 
     
-  
-  const configuration = new Configuration({
-      organization: OPENAI_ORG_ID,
-      apiKey: OPENAI_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
 
   
 
@@ -99,8 +99,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const last = reqMessages.at(-1)
 
+    // console.log(last.content)
 
-    const context = '' //await getContext(last.content)
+    const context = await getContext(last.content)
     
     
     last.content = `
