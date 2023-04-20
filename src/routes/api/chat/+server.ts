@@ -1,3 +1,5 @@
+import { Configuration, OpenAIApi } from "openai";
+
 import { OPENAI_KEY, PINECONE_KEY, PINECONE_ENV, OPENAI_ORG_ID } from '$env/static/private';
 import type { CreateChatCompletionRequest, ChatCompletionRequestMessage } from 'openai';
 import type { RequestHandler } from './$types';
@@ -12,23 +14,16 @@ export const config: Config = {
 };
 
 
-import { Configuration, OpenAIApi } from "openai";
-const configuration = new Configuration({
-    organization: OPENAI_ORG_ID,
-    apiKey: OPENAI_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
 
 import { PineconeClient } from "@pinecone-database/pinecone";
 
 
 
 
-
-const pinecone = new PineconeClient()
-
 async function initPineCone() {
+
+  const pinecone = new PineconeClient()
+
   console.log("initing pinecone", PINECONE_ENV,PINECONE_KEY )
   
   await pinecone.init({
@@ -45,7 +40,7 @@ async function initPineCone() {
 async function getContext(query) {
 
   const pinecone_index = await initPineCone()
-  
+
   const res = await openai.createEmbedding({
     input: query,
     model: 'text-embedding-ada-002',
@@ -74,7 +69,14 @@ async function getContext(query) {
 
 export const POST: RequestHandler = async ({ request }) => {
 
+    
   
+  const configuration = new Configuration({
+      organization: OPENAI_ORG_ID,
+      apiKey: OPENAI_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+
   
 
   try {
