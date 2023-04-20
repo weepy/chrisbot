@@ -1,15 +1,81 @@
-import { OPENAI_KEY } from '$env/static/private';
+import { OPENAI_KEY, PINECONE_KEY, PINECONE_ENV, OPENAI_ORG_ID } from '$env/static/private';
 import type { CreateChatCompletionRequest, ChatCompletionRequestMessage } from 'openai';
 import type { RequestHandler } from './$types';
 import { getTokens } from '$lib/utils/tokenizer';
 import { json } from '@sveltejs/kit';
 import type { Config } from '@sveltejs/adapter-vercel';
 
+// import 
+const PROMPT_START = "You are Chris Bot. You are helping a user with their questions about startups. "
 export const config: Config = {
   runtime: 'edge'
 };
 
+
+import { Configuration, OpenAIApi } from "openai";
+const configuration = new Configuration({
+    organization: OPENAI_ORG_ID,
+    apiKey: OPENAI_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+
+import { PineconeClient } from "@pinecone-database/pinecone";
+
+
+let pinecone_index
+
+
+const pinecone = new PineconeClient()
+
+async function initPineCone() {
+  console.log("initing pinecone", PINECONE_ENV,PINECONE_KEY )
+  
+  await pinecone.init({
+
+    environment: PINECONE_ENV,
+    apiKey: PINECONE_KEY,
+  })
+  console.log("done")
+  return pinecone.Index("chat-dtgp");
+  
+}
+
+
+async function getContext(query) {
+
+  const res = await openai.createEmbedding({
+    input: query,
+    model: 'text-embedding-ada-002',
+  });
+  console.log(res.data.data[0].embedding)
+  const xq = res.data.data[0].embedding;
+  const result = await pinecone_index.query(
+    { queryRequest: {
+      // namespace: "example-namespace",
+      topK: 3,
+      // filter: {
+      //   genre: { $in: ["comedy", "documentary", "drama"] },
+      // },
+      // includeValues: true,
+      includeMetadata: true,
+      vector: xq,
+    }
+  })
+    
+  for (const match of result.matches) {
+    console.log(`${match.score.toFixed(2)}: ${match.metadata.text}`);
+  }
+
+  return result.matches.map( x => x.metadata.text ).join("")
+}
+
 export const POST: RequestHandler = async ({ request }) => {
+
+  if(!pinecone_index) {
+    pinecone_index = await initPineCone()
+  }
+
   try {
     if (!OPENAI_KEY) {
       throw new Error('OPENAI_KEY env variable not set');
@@ -27,38 +93,68 @@ export const POST: RequestHandler = async ({ request }) => {
       throw new Error('no messages provided');
     }
 
+
+    const last = reqMessages.at(-1)
+
+    console.log(last.content)
+
+    const context = await getContext(last.content)
+    
+    
+    last.content = `
+      Context: ${context}
+      
+
+      ${last.content}
+    `
+
+
+
+
+
     let tokenCount = 0;
 
     reqMessages.forEach((msg) => {
       const tokens = getTokens(msg.content);
       tokenCount += tokens;
-    });
+    })
 
-    const moderationRes = await fetch('https://api.openai.com/v1/moderations', {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_KEY}`
-      },
-      method: 'POST',
-      body: JSON.stringify({
-        input: reqMessages[reqMessages.length - 1].content
-      })
-    });
+    
+    // const res = await openai.createEmbedding({
+    //   input: query,
+    //   model: 'text-embedding-ada-002',
+    // });
+    // const xq = res.data[0].embedding;
+    // const result = await index.query({ xq }, { topK: 5, includeMetadata: true });
+    // for (const match of result.matches) {
+    //   console.log(`${match.score.toFixed(2)}: ${match.metadata.text}`);
+    // }
+    // const moderationRes = await fetch('https://api.openai.com/v1/moderations', {
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: `Bearer ${OPENAI_KEY}`
+    //   },
+    //   method: 'POST',
+    //   body: JSON.stringify({
+    //     input: reqMessages[reqMessages.length - 1].content
+    //   })
+    // });
 
-    const moderationData = await moderationRes.json();
-    const [results] = moderationData.results;
+    // const moderationData = await moderationRes.json();
+    // const [results] = moderationData.results;
 
-    if (results.flagged) {
-      throw new Error('Query flagged by openai');
-    }
-
-    const prompt =
-      'You are a virtual assistant for a company called Huntabyte. Your name is Axel Smith';
+    // if (results.flagged) {
+    //   throw new Error('Query flagged by openai');
+    // }
+    
+    const prompt = PROMPT_START
     tokenCount += getTokens(prompt);
-
+    
     if (tokenCount >= 4000) {
       throw new Error('Query too large');
     }
+
+    console.log("tokenCount", tokenCount)
 
     const messages: ChatCompletionRequestMessage[] = [
       { role: 'system', content: prompt },
@@ -71,6 +167,8 @@ export const POST: RequestHandler = async ({ request }) => {
       temperature: 0.9,
       stream: true
     };
+
+    console.log(chatRequestOpts)
 
     const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       headers: {

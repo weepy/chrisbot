@@ -9,7 +9,7 @@ export interface ChatTranscript {
 
 const { subscribe, update, ...store } = writable<ChatTranscript>({
   messages: [
-    { role: 'assistant', content: 'Hello, I am your virtual assistant. How can I help you?' }
+    { role: 'assistant', content: 'Hello human, how can I help?' }
   ],
   chatState: 'idle'
 });
@@ -36,7 +36,7 @@ const replace = (messages: ChatTranscript) => {
 const reset = () =>
   store.set({
     messages: [
-      { role: 'assistant', content: 'Hello, I am your virtual assistant. How can I help you?' }
+      { role: 'assistant', content: 'Hello human, how can I help?' }
     ],
     chatState: 'idle'
   });
