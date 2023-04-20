@@ -23,7 +23,7 @@ const openai = new OpenAIApi(configuration);
 import { PineconeClient } from "@pinecone-database/pinecone";
 
 
-let pinecone_index
+
 
 
 const pinecone = new PineconeClient()
@@ -44,6 +44,8 @@ async function initPineCone() {
 
 async function getContext(query) {
 
+  const pinecone_index = await initPineCone()
+  
   const res = await openai.createEmbedding({
     input: query,
     model: 'text-embedding-ada-002',
@@ -72,9 +74,8 @@ async function getContext(query) {
 
 export const POST: RequestHandler = async ({ request }) => {
 
-  if(!pinecone_index) {
-    pinecone_index = await initPineCone()
-  }
+  
+  
 
   try {
     if (!OPENAI_KEY) {
