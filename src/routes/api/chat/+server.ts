@@ -9,9 +9,9 @@ import type { Config } from '@sveltejs/adapter-vercel';
 
 // import 
 const PROMPT_START = "You are Chris Bot. You are helping a user with their questions about startups. "
-export const config: Config = {
-  runtime: 'edge'
-};
+// export const config: Config = {
+//   runtime: 'edge'
+// };
 
 
 
