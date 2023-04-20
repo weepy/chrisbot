@@ -99,9 +99,8 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const last = reqMessages.at(-1)
 
-    console.log(last.content)
 
-    const context = await getContext(last.content)
+    const context = '' //await getContext(last.content)
     
     
     last.content = `
