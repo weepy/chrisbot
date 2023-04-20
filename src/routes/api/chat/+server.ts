@@ -18,19 +18,22 @@ export const config: Config = {
 import { PineconeClient } from "@pinecone-database/pinecone";
 
 
-
-
 async function initPineCone() {
 
   const pinecone = new PineconeClient()
 
   console.log("initing pinecone", PINECONE_ENV,PINECONE_KEY )
-  
-  await pinecone.init({
+  try {
+    await pinecone.init({
 
-    environment: PINECONE_ENV,
-    apiKey: PINECONE_KEY,
-  })
+      environment: PINECONE_ENV,
+      apiKey: PINECONE_KEY,
+    })
+  }
+  catch(e) {
+    console.log("error", e)  
+  }
+
   console.log("done")
   return pinecone.Index("chat-dtgp");
   
@@ -49,7 +52,7 @@ async function getContext(query) {
   const pinecone_index = await initPineCone()
 
   return "none"
-  
+
   const res = await openai.createEmbedding({
     input: query,
     model: 'text-embedding-ada-002',
