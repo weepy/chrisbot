@@ -6,6 +6,7 @@
 
   let query = '';
 
+  
   const handleSubmit = async () => {
     answer.set('...');
     await chatMessages.set(query);
