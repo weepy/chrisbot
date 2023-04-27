@@ -51,7 +51,6 @@ async function getContext(query) {
 
   const pinecone_index = await initPineCone()
 
-  return "none"
 
   const res = await openai.createEmbedding({
     input: query,
