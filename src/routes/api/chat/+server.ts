@@ -5,15 +5,13 @@ import type { CreateChatCompletionRequest, ChatCompletionRequestMessage } from '
 import type { RequestHandler } from './$types';
 import { getTokens } from '$lib/utils/tokenizer';
 import { json } from '@sveltejs/kit';
-import type { Config } from '@sveltejs/adapter-vercel';
+// import type { Config } from '@sveltejs/adapter-vercel';
 
 // import 
 const PROMPT_START = "You are Chris Bot. You are helping a user with their questions about startups. "
-// export const config: Config = {
-//   runtime: 'edge'
-// };
-
-
+export const config: Config = {
+  runtime: 'edge'
+};
 
 import { PineconeClient } from "@pinecone-database/pinecone";
 
